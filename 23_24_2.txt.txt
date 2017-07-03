@@ -1,0 +1,72 @@
+using System;
+using System.Data;
+using System.Configuration;
+using System.Web;
+using DSC;
+using DSC_BusinessObjects;
+using DSC.Contracts;
+using DSC.Common;
+using DSC.Collections;
+using System.IO;
+using System.Xml;
+using System.Collections;
+namespace DSC
+{
+    public class DSC
+    {
+        static public Batch Main(Batch objBatch, BatchType objBatchtype, Hashtable htQueryStrParams)
+        {
+            try
+            {
+                string sLoggedOnUser = objBatch.User.UserName;
+                string docvalues = "";
+                string sSource = "SCAN";
+                //sSource = htQueryStrParams["SOURCE"].ToString();
+                //sLoggedOnUser = htQueryStrParams["LOGGEDONUSER"].ToString();
+                docvalues = htQueryStrParams["HiddenValue"].ToString();
+                string[] splitarr = docvalues.Split(',');
+                int j = 0;
+                foreach (Document sdoc in objBatch.Documents)
+                {
+                    SmartList<IndexValues> lstIndexvalues = new SmartList<IndexValues>(sdoc.DocumentIndexValues);
+                    foreach (IndexClassKeyFieldMapping idxclsKF in sdoc.Form.IndexClass.IndexClassKeyFieldMapping)
+                    {
+                        if (idxclsKF.KeyFieldStatus)
+                        {
+                            IndexValues objindexvalue;                           
+                            objindexvalue = new IndexValues(EntityState.NewlyAdded);
+                            objindexvalue.Batch = objBatch;
+                            objindexvalue.Document = sdoc;
+                            objindexvalue.IndexClassKeyField = idxclsKF;
+                            switch (idxclsKF.KeyFieldName.ToUpper())
+                            {
+                                case "SOURCE":
+                                    objindexvalue.IdxValue = sSource;
+                                    break;
+                                case "DOC_REF_NUM":
+                                    objindexvalue.IdxValue = splitarr[j];
+                                    j++;
+                                    break;
+                                case "USERID":
+                                    objindexvalue.IdxValue = sLoggedOnUser;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            lstIndexvalues.Add(objindexvalue);
+                        }
+                               
+                    }
+                    sdoc.DocumentIndexValues = lstIndexvalues;                    
+                }
+
+                return objBatch;
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
+        }        
+     
+    }
+}
